@@ -1,18 +1,16 @@
 # coding:utf8
-from .resnet import resnet18
+import torch as t
 
 
-class CNNencoder():
-    def __init__(self, batch_size=2, frames=16, img_size=(224, 224), net=resnet18(True)):
-        self.net = net
-        self.frames = frames
-        self.batch_size = batch_size
-        self.size = img_size
+class CNNencoder(t.nn.Module):
+    def __init__(self, cfg):
+        super(CNNencoder, self).__init__()
+        self.net = cfg.net
+        self.frames = cfg.frames
+        self.batch_size = cfg.batch_size
+        self.size = cfg.img_size
 
-    def __call__(self, input):
-        return self.encoding(input)
-
-    def encoding(self, input):
-        x = input.view(-1, 3, self.size[0], self.size[1])
+    def forward(self, input):
+        x = input.contiguous().view(-1, 3, self.size[0], self.size[1])
         x = self.net(x)
         return x.view(self.batch_size, self.frames, -1)
