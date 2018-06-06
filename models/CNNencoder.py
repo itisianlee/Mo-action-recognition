@@ -13,4 +13,4 @@ class CNNencoder(t.nn.Module):
     def forward(self, input):
         x = input.contiguous().view(-1, 3, self.size[0], self.size[1])
         x = self.net(x)
-        return x.view(self.batch_size, self.frames, -1)
+        return x.view(-1, self.frames, 512)

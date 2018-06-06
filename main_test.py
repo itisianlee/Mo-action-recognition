@@ -7,10 +7,12 @@ from config import cfg
 
 def main():
     vedionet = vedioLSTM(cfg, encoder=CNNencoder(cfg))
-    print(vedionet)
-    input = t.autograd.Variable(t.randn(2, 3, 16, 112, 112))
+    vedionet = vedionet.cuda()
+    # vedionet = t.nn.DataParallel(vedionet)
+    # print(vedionet)
+    input = t.autograd.Variable(t.randn(8, 3, 16, 112, 112).cuda())
     net = vedionet(input)
-    # print(net)
+    print(net)
     # print(net(input))
 
 

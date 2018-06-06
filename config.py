@@ -23,12 +23,12 @@ class Config(object):
     weight = 1  # 正负样本的weight
     decay_every = 3000  # 每多少个batch 查看一下score,并随之修改学习率
 
-    num_classes = 101  # 类别
+    n_classes = 101  # 类别
 
-    batch_size = 2
+    batch_size = 64
     frames = 16
     img_size = (112, 112)
-    net = resnet18(True)
+    net = resnet18(pretrained=True)
 
     encode_dim = 512
     hidden_size = 256  # LSTM hidden size
@@ -36,7 +36,41 @@ class Config(object):
     linear_hidden_size = 1024  # 全连接层隐藏元数目
 
     lr = 1e-3  # 学习率
-    lr2 = 1e-5  # embedding层的学习率
+    lr2 = 1e-6  # encoder层的学习率
+
+    # ==========================
+    # opts.py中的配置
+    # ==========================
+    root_path = '/home/lijianwei/action_datasets'
+    video_path = 'ucf101'
+    annotation_path = 'ucfTrainTestlist/ucf101_01.json'
+    checkpoints = 'checkpoints'
+    logdir = 'logdir'
+
+    scales = [1.0, 0.84089641525, 0.7071067811803005, 0.5946035574934808, 0.4999999999911653]
+    sample_size = 112
+    sample_duration = 16
+    norm_value = 1
+
+    n_threads = 4
+
+    manual_seed = 1
+    cuda = True
+    train_crop = 'corner'
+    n_val_samples = 3
+
+    lr_patience = 10
+    begin_epoch = 1
+    n_epochs = 200
+    save_model_every = 10
+
+    def list_all_member(self):
+        print('##########################################')
+        print('####### config')
+        print('##########################################')
+        for k in dir(self):
+            if not k.startswith('_') and k != 'list_all_member' and k != 'net':
+                print(k, '-->', getattr(self, k))
 
 
 cfg = Config()

@@ -42,12 +42,12 @@ class BasicModule(t.nn.Module):
         return path
 
     def get_optimizer(self, lr1, lr2=0, weight_decay=0):
-        ignored_params = list(map(id, self.encoder.parameters()))
-        base_params = filter(lambda p: id(p) not in ignored_params,
+        encoder_params = list(map(id, self.encoder.parameters()))
+        lstm_params = filter(lambda p: id(p) not in encoder_params,
                              self.parameters())
-        if lr2 is None: lr2 = lr1 * 0.5
+
         optimizer = t.optim.Adam([
-            dict(params=base_params, weight_decay=weight_decay, lr=lr1),
+            dict(params=lstm_params, weight_decay=weight_decay, lr=lr1),
             {'params': self.encoder.parameters(), 'lr': lr2}
         ])
         return optimizer

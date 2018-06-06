@@ -23,11 +23,13 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
     for i, (inputs, targets) in enumerate(data_loader):
         data_time.update(time.time() - end_time)
 
-        if not opt.no_cuda:
+        if opt.cuda:
             targets = targets.cuda(async=True)
         inputs = Variable(inputs)
         targets = Variable(targets)
-        outputs = model(inputs)
+        outputs = model(inputs.cuda())
+        # print("outputs.type:", outputs)
+        # print("targets.type:", targets)
         loss = criterion(outputs, targets)
         acc = calculate_accuracy(outputs, targets)
 
@@ -70,12 +72,11 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
         'lr': optimizer.param_groups[0]['lr']
     })
 
-    if epoch % opt.checkpoint == 0:
-        save_file_path = os.path.join(opt.result_path,
+    if epoch % opt.save_model_every == 0:
+        save_file_path = os.path.join(opt.checkpoints,
                                       'save_{}.pth'.format(epoch))
         states = {
             'epoch': epoch + 1,
-            'arch': opt.arch,
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
         }

@@ -90,7 +90,8 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
         idx_to_class[label] = name
 
     dataset = []
-    for i in range(len(video_names)):
+    for i in range(len(video_names)):  # 所有数据集
+        # for i in range(1000):  # 使用1000个作为测试
         if i % 1000 == 0:
             print('dataset loading [{}/{}]'.format(i, len(video_names)))
 
