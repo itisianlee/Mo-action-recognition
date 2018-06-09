@@ -21,7 +21,7 @@ class vedioLSTM(BasicModule):
                               num_layers=cfg.num_layers,
                               bias=True,
                               batch_first=False,
-                              # dropout = 0.5,
+                              dropout=0.5,
                               bidirectional=True
                               )
         self.fc = nn.Sequential(

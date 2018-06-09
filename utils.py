@@ -1,3 +1,4 @@
+# coding:utf8
 import csv
 
 
@@ -55,6 +56,7 @@ def calculate_accuracy(outputs, targets):
     _, pred = outputs.topk(1, 1, True)
     pred = pred.t()
     correct = pred.eq(targets.view(1, -1))
-    n_correct_elems = correct.float().sum().data[0]
+    # n_correct_elems = correct.float().sum().data[0]
+    n_correct_elems = correct.float().sum().item()  # pytorch 0.5将有的
 
     return n_correct_elems / batch_size

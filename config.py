@@ -25,7 +25,7 @@ class Config(object):
 
     n_classes = 101  # 类别
 
-    batch_size = 64
+    batch_size = 16
     frames = 16
     img_size = (112, 112)
     net = resnet18(pretrained=True)
@@ -41,11 +41,11 @@ class Config(object):
     # ==========================
     # opts.py中的配置
     # ==========================
-    root_path = '/home/lijianwei/action_datasets'
+    root_path = '/home/lijianwei/share5/action_datasets'
     video_path = 'ucf101'
     annotation_path = 'ucfTrainTestlist/ucf101_01.json'
-    checkpoints = 'checkpoints'
-    logdir = 'logdir'
+    checkpoints = '/home/lijianwei/share5/Mo-action-recognition/checkpoints'
+    logdir = '/home/lijianwei/share5/Mo-action-recognition/logdir'
 
     scales = [1.0, 0.84089641525, 0.7071067811803005, 0.5946035574934808, 0.4999999999911653]
     sample_size = 112
@@ -62,7 +62,8 @@ class Config(object):
     lr_patience = 10
     begin_epoch = 1
     n_epochs = 200
-    save_model_every = 10
+    epoch_every_save_model = 5
+    step_every_summary = 10
 
     def list_all_member(self):
         print('##########################################')

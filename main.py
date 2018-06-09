@@ -1,5 +1,7 @@
 # coding:utf8
-import torch as t
+from __future__ import division
+from __future__ import print_function
+
 from models.CNNencoder import CNNencoder
 from models.vedioLSTM import vedioLSTM
 from config import cfg
@@ -15,7 +17,9 @@ from temporal_transforms import LoopPadding, TemporalRandomCrop
 from target_transforms import ClassLabel, VideoID
 from target_transforms import Compose as TargetCompose
 from dataset import get_training_set, get_validation_set
-from utils import Logger
+from tensorboard_logger import Logger
+# from utils import Logger
+from log_utils import get_log_dir
 from train import train_epoch
 from validation import val_epoch
 
@@ -48,7 +52,7 @@ if __name__ == '__main__':
     print('##########################################')
     assert cfg.train_crop in ['random', 'corner', 'center']
     if cfg.train_crop == 'random':
-        crop_method = MultiScaleRandomCrop(cfg.scales, cfg.sample_size)
+        crop_method = (cfg.scales, cfg.sample_size)
     elif cfg.train_crop == 'corner':
         crop_method = MultiScaleCornerCrop(cfg.scales, cfg.sample_size)
     elif cfg.train_crop == 'center':
@@ -70,12 +74,6 @@ if __name__ == '__main__':
         num_workers=cfg.n_threads,
         drop_last=False,
         pin_memory=True)
-    train_logger = Logger(
-        os.path.join(cfg.logdir, 'train.log'),
-        ['epoch', 'loss', 'acc', 'lr'])
-    train_batch_logger = Logger(
-        os.path.join(cfg.logdir, 'train_batch.log'),
-        ['epoch', 'batch', 'iter', 'loss', 'acc', 'lr'])
     optimizer = model.get_optimizer(lr1=cfg.lr, lr2=cfg.lr2)
     scheduler = lr_scheduler.ReduceLROnPlateau(
         optimizer, 'min', patience=cfg.lr_patience)
@@ -96,18 +94,16 @@ if __name__ == '__main__':
         batch_size=cfg.batch_size,
         shuffle=False,
         num_workers=cfg.n_threads,
-        drop_last=True,
+        drop_last=False,
         pin_memory=True)
-    val_logger = Logger(
-        os.path.join(cfg.logdir, 'val.log'), ['epoch', 'loss', 'acc'])
-
     print('##########################################')
     print('####### run')
     print('##########################################')
+    path = get_log_dir(cfg.logdir, name=cfg.model)
+    logger = Logger(logdir=path)
+
     for i in range(cfg.begin_epoch, cfg.n_epochs + 1):
-        train_epoch(i, train_loader, model, criterion, optimizer, cfg,
-                    train_logger, train_batch_logger)
-        validation_loss = val_epoch(i, val_loader, model, criterion, cfg,
-                                    val_logger)
+        train_epoch(i, train_loader, model, criterion, optimizer, cfg, logger)
+        validation_loss = val_epoch(i, val_loader, model, criterion, cfg, logger)
 
         scheduler.step(validation_loss)

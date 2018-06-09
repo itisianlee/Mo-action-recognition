@@ -8,6 +8,8 @@ import functools
 import json
 import copy
 
+from tqdm import tqdm
+
 from utils import load_value_file
 
 
@@ -27,12 +29,15 @@ def accimage_loader(path):
         return pil_loader(path)
 
 
+# def get_default_image_loader():
+#     from torchvision import get_image_backend
+#     if get_image_backend() == 'accimage':
+#         return accimage_loader
+#     else:
+#         return pil_loader
+
 def get_default_image_loader():
-    from torchvision import get_image_backend
-    if get_image_backend() == 'accimage':
-        return accimage_loader
-    else:
-        return pil_loader
+    return pil_loader
 
 
 def video_loader(video_dir_path, frame_indices, image_loader):
@@ -88,12 +93,11 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
     idx_to_class = {}
     for name, label in class_to_idx.items():
         idx_to_class[label] = name
-
     dataset = []
-    for i in range(len(video_names)):  # 所有数据集
-        # for i in range(1000):  # 使用1000个作为测试
-        if i % 1000 == 0:
-            print('dataset loading [{}/{}]'.format(i, len(video_names)))
+    # for i in tqdm(range(len(video_names))):  # 所有数据集
+    for i in range(500):  # 使用1000个作为测试
+        # if i % 1000 == 0:
+        #     print('dataset loading [{}/{}]'.format(i, len(video_names)))
 
         video_path = os.path.join(root_path, video_names[i])
         if not os.path.exists(video_path):
@@ -122,17 +126,19 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
             dataset.append(sample)
         else:
             if n_samples_for_each_video > 1:
-                step = max(1,
-                           math.ceil((n_frames - 1 - sample_duration) /
-                                     (n_samples_for_each_video - 1)))
+                step = int(max(1,
+                               math.ceil((n_frames - 1 - sample_duration) /
+                                         (n_samples_for_each_video - 1))))
             else:
-                step = sample_duration
+                step = int(sample_duration)
             for j in range(1, n_frames, step):
                 sample_j = copy.deepcopy(sample)
                 sample_j['frame_indices'] = list(
                     range(j, min(n_frames + 1, j + sample_duration)))
                 dataset.append(sample_j)
-
+    print('video_names.size-{}:'.format(subset), len(dataset))
+    print(dataset[0])
+    print(idx_to_class)
     return dataset, idx_to_class
 
 
