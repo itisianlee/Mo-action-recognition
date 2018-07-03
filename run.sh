@@ -1,0 +1,1 @@
+mpirun python rnn_main.py --no-debug --tensorboard resnet50-lstm --flag fc-sv --model_name resnet50-lstm

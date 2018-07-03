@@ -2,24 +2,20 @@
 from __future__ import division
 from __future__ import print_function
 
-from models import get_end_net, get_encoder_net, CNNencoder
-from config import cfg
-from opts import parse_opts
-
 import os
 import torch
 from torch import nn
 from torch.optim import lr_scheduler
-from spatial_transforms import (
-    Compose, Normalize, Scale, CenterCrop, CornerCrop, MultiScaleCornerCrop,
-    MultiScaleRandomCrop, RandomHorizontalFlip, ToTensor)
-from temporal_transforms import LoopPadding, TemporalRandomCrop
-from target_transforms import ClassLabel
-from dataset import get_training_set, get_validation_set
+
+from datasets import FaceRecognition, train_spatial_transform, \
+    TemporalRandomCrop, val_spatial_transform
 from tensorboard_logger import Logger
 from log_utils import get_log_dir
 from train import train_epoch
 from validation import val_epoch
+from models import get_end_net, get_encoder_net, CNNencoder
+from config import cfg
+from opts import parse_opts
 
 
 def main():
@@ -40,7 +36,7 @@ def main():
         else:
             cfg.tensorboard = opt.tensorboard
             cfg.flag = opt.flag
-    model = cls_model(cfg, encoder=CNNencoder(cfg, ecd_model(pretrained=True, path=opt.encoder_model)))
+    model = cls_model(cfg, encoder=CNNencoder(cfg, ecd_model(pretrained=True)))
     cfg.video_path = os.path.join(cfg.root_path, cfg.video_path)
     cfg.annotation_path = os.path.join(cfg.root_path, cfg.annotation_path)
 
@@ -56,28 +52,14 @@ def main():
     if cfg.cuda:
         criterion = criterion.cuda()
 
-    norm_method = Normalize([0, 0, 0], [1, 1, 1])
-
     print('##########################################')
     print('####### train')
     print('##########################################')
-    assert cfg.train_crop in ['random', 'corner', 'center']
-    if cfg.train_crop == 'random':
-        crop_method = (cfg.scales, cfg.sample_size)
-    elif cfg.train_crop == 'corner':
-        crop_method = MultiScaleCornerCrop(cfg.scales, cfg.sample_size)
-    elif cfg.train_crop == 'center':
-        crop_method = MultiScaleCornerCrop(
-            cfg.scales, cfg.sample_size, crop_positions=['c'])
-    spatial_transform = Compose([
-        crop_method,
-        RandomHorizontalFlip(),
-        ToTensor(cfg.norm_value), norm_method
-    ])
-    temporal_transform = TemporalRandomCrop(cfg.sample_duration)
-    target_transform = ClassLabel()
-    training_data = get_training_set(cfg, spatial_transform,
-                                     temporal_transform, target_transform)
+
+    training_data = FaceRecognition(cfg,
+                                    '/share5/public/lijianwei/faces/',
+                                    TemporalRandomCrop(14),
+                                    train_spatial_transform)
     train_loader = torch.utils.data.DataLoader(
         training_data,
         batch_size=cfg.batch_size,
@@ -91,15 +73,11 @@ def main():
     print('##########################################')
     print('####### val')
     print('##########################################')
-    spatial_transform = Compose([
-        Scale(cfg.sample_size),
-        CenterCrop(cfg.sample_size),
-        ToTensor(cfg.norm_value), norm_method
-    ])
-    temporal_transform = LoopPadding(cfg.sample_duration)
-    target_transform = ClassLabel()
-    validation_data = get_validation_set(
-        cfg, spatial_transform, temporal_transform, target_transform)
+    validation_data = FaceRecognition(cfg,
+                                      '/share5/public/lijianwei/faces/',
+                                      TemporalRandomCrop(14),
+                                      val_spatial_transform,
+                                      phase='val')
     val_loader = torch.utils.data.DataLoader(
         validation_data,
         batch_size=cfg.batch_size,
@@ -110,6 +88,8 @@ def main():
     print('##########################################')
     print('####### run')
     print('##########################################')
+    path = None
+    best_avg = 0.
     if cfg.debug:
         logger = None
     else:
@@ -119,8 +99,7 @@ def main():
 
     for i in range(cfg.begin_epoch, cfg.n_epochs + 1):
         train_epoch(i, train_loader, model, criterion, optimizer, cfg, logger)
-        validation_loss = val_epoch(i, val_loader, model, criterion, cfg, logger)
-
+        validation_loss = val_epoch(i, val_loader, model, criterion, cfg, logger, path, best_avg)
         scheduler.step(validation_loss)
 
 

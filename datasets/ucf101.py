@@ -86,7 +86,7 @@ def get_video_names_and_annotations(data, subset):
 
 
 def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
-                 sample_duration):
+                 sample_duration, debug=True):
     data = load_annotation_data(annotation_path)
     video_names, annotations = get_video_names_and_annotations(data, subset)
     class_to_idx = get_class_labels(data)
@@ -94,8 +94,11 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
     for name, label in class_to_idx.items():
         idx_to_class[label] = name
     dataset = []
-    # for i in tqdm(range(len(video_names))):  # 所有数据集
-    for i in range(500):  # 使用1000个作为测试
+    debug_len = len(video_names)
+    if debug:
+        debug_len = 500
+    for i in tqdm(range(debug_len)):  # 所有数据集
+        # for i in range(500):  # 使用1000个作为测试
         # if i % 1000 == 0:
         #     print('dataset loading [{}/{}]'.format(i, len(video_names)))
 
@@ -136,9 +139,9 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
                 sample_j['frame_indices'] = list(
                     range(j, min(n_frames + 1, j + sample_duration)))
                 dataset.append(sample_j)
-    print('video_names.size-{}:'.format(subset), len(dataset))
-    print(dataset[0])
-    print(idx_to_class)
+    # print('video_names.size-{}:'.format(subset), len(dataset))
+    # print(dataset[0])
+    # print(idx_to_class)
     return dataset, idx_to_class
 
 
@@ -168,10 +171,11 @@ class UCF101(data.Dataset):
                  temporal_transform=None,
                  target_transform=None,
                  sample_duration=16,
-                 get_loader=get_default_video_loader):
+                 get_loader=get_default_video_loader,
+                 debug=True):
         self.data, self.class_names = make_dataset(
             root_path, annotation_path, subset, n_samples_for_each_video,
-            sample_duration)
+            sample_duration, debug=debug)
 
         self.spatial_transform = spatial_transform
         self.temporal_transform = temporal_transform
@@ -193,6 +197,8 @@ class UCF101(data.Dataset):
         clip = self.loader(path, frame_indices)
         if self.spatial_transform is not None:
             self.spatial_transform.randomize_parameters()
+            # self.spatial_transform.crop_position = 'c'  # 中心crop
+            # self.spatial_transform.scale = 1.0  # 中心crop
             clip = [self.spatial_transform(img) for img in clip]
         clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
 

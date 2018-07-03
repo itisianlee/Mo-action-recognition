@@ -10,7 +10,8 @@ def get_training_set(opt, spatial_transform, temporal_transform,
         'training',
         spatial_transform=spatial_transform,
         temporal_transform=temporal_transform,
-        target_transform=target_transform)
+        target_transform=target_transform,
+        debug=opt.debug)
 
     return training_data
 
@@ -25,7 +26,8 @@ def get_validation_set(opt, spatial_transform, temporal_transform,
         spatial_transform,
         temporal_transform,
         target_transform,
-        sample_duration=opt.sample_duration)
+        sample_duration=opt.sample_duration,
+        debug=opt.debug)
     return validation_data
 
 
@@ -47,6 +49,7 @@ def get_test_set(opt, spatial_transform, temporal_transform, target_transform):
             spatial_transform,
             temporal_transform,
             target_transform,
-            sample_duration=opt.sample_duration)
+            sample_duration=opt.sample_duration,
+            debug=opt.debug)
 
     return test_data

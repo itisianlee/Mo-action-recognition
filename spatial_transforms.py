@@ -288,8 +288,9 @@ class MultiScaleCornerCrop(object):
         self.scales = scales
         self.size = size
         self.interpolation = interpolation
-
         self.crop_positions = crop_positions
+        self.scale = 1.0
+        self.crop_position = 'c'
 
     def __call__(self, img):
         min_length = min(img.size[0], img.size[1])
@@ -333,9 +334,7 @@ class MultiScaleCornerCrop(object):
 
     def randomize_parameters(self):
         self.scale = self.scales[random.randint(0, len(self.scales) - 1)]
-        self.crop_position = self.crop_positions[random.randint(
-            0,
-            len(self.scales) - 1)]
+        self.crop_position = self.crop_positions[random.randint(0, len(self.scales) - 1)]
 
 
 class MultiScaleRandomCrop(object):

@@ -2,9 +2,9 @@
 from __future__ import division
 from __future__ import print_function
 
-from models import get_end_net, get_encoder_net, CNNencoder
+from models.CNNencoder import CNNencoder
+from models.vedioLSTM import vedioLSTM
 from config import cfg
-from opts import parse_opts
 
 import os
 import torch
@@ -14,39 +14,26 @@ from spatial_transforms import (
     Compose, Normalize, Scale, CenterCrop, CornerCrop, MultiScaleCornerCrop,
     MultiScaleRandomCrop, RandomHorizontalFlip, ToTensor)
 from temporal_transforms import LoopPadding, TemporalRandomCrop
-from target_transforms import ClassLabel
+from target_transforms import ClassLabel, VideoID
 from dataset import get_training_set, get_validation_set
-from tensorboard_logger import Logger
+from utils import Logger
 from log_utils import get_log_dir
-from train import train_epoch
-from validation import val_epoch
+from train_log import train_epoch
+from validation_log import val_epoch
 
-
-def main():
-    opt = parse_opts()
-
-    ecd_name, cls_name = opt.model_name.split('-')
-    ecd_model = get_encoder_net(ecd_name)
-    cls_model = get_end_net(cls_name)
-
-    cfg.encoder_model = ecd_name
-    cfg.classification_model = cls_name
-
-    if opt.debug:
-        cfg.debug = opt.debug
-    else:
-        if opt.tensorboard == 'TEST':
-            cfg.tensorboard = opt.model_name
-        else:
-            cfg.tensorboard = opt.tensorboard
-            cfg.flag = opt.flag
-    model = cls_model(cfg, encoder=CNNencoder(cfg, ecd_model(pretrained=True, path=opt.encoder_model)))
+if __name__ == '__main__':
     cfg.video_path = os.path.join(cfg.root_path, cfg.video_path)
     cfg.annotation_path = os.path.join(cfg.root_path, cfg.annotation_path)
 
     cfg.list_all_member()
 
+    # with open(os.path.join(opt.result_path, 'opts.json'), 'w') as opt_file:
+    #     json.dump(vars(opt), opt_file)
+
     torch.manual_seed(cfg.manual_seed)
+
+    # model, parameters = generate_model(opt)
+    model = vedioLSTM(cfg, encoder=CNNencoder(cfg))
     print('##########################################')
     print('####### model 仅支持单GPU')
     print('##########################################')
@@ -83,8 +70,15 @@ def main():
         batch_size=cfg.batch_size,
         shuffle=True,
         num_workers=cfg.n_threads,
-        drop_last=False,
+        drop_last=True,
         pin_memory=True)
+    train_logger = Logger(
+        os.path.join(cfg.custom_logdir, 'train.log'),
+        ['epoch', 'loss', 'acc', 'lr'])
+    train_batch_logger = Logger(
+        os.path.join(cfg.custom_logdir, 'train_batch.log'),
+        ['epoch', 'batch', 'iter', 'loss', 'acc', 'lr'])
+
     optimizer = model.get_optimizer(lr1=cfg.lr, lr2=cfg.lr2)
     scheduler = lr_scheduler.ReduceLROnPlateau(
         optimizer, 'min', patience=cfg.lr_patience)
@@ -107,22 +101,16 @@ def main():
         num_workers=cfg.n_threads,
         drop_last=False,
         pin_memory=True)
+    val_logger = Logger(
+        os.path.join(cfg.custom_logdir, 'val.log'), ['epoch', 'loss', 'acc'])
+
     print('##########################################')
     print('####### run')
     print('##########################################')
-    if cfg.debug:
-        logger = None
-    else:
-        path = get_log_dir(cfg.logdir, name=cfg.tensorboard, flag=cfg.flag)
-        logger = Logger(logdir=path)
-        cfg.save_config(path)
+    path = get_log_dir(cfg.logdir, name=cfg.model)
 
     for i in range(cfg.begin_epoch, cfg.n_epochs + 1):
-        train_epoch(i, train_loader, model, criterion, optimizer, cfg, logger)
-        validation_loss = val_epoch(i, val_loader, model, criterion, cfg, logger)
+        train_epoch(i, train_loader, model, criterion, optimizer, cfg, train_logger, train_batch_logger)
+        validation_loss = val_epoch(i, val_loader, model, criterion, cfg, val_logger)
 
         scheduler.step(validation_loss)
-
-
-if __name__ == '__main__':
-    main()
