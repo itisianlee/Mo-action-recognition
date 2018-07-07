@@ -23,4 +23,5 @@ class AttentionLayer(BasicModule):
         alpha = self.a_softmax(attn)
         alpha = alpha.unsqueeze(2)
         attn_vec = torch.sum(x_hid * alpha, 0)
+        # out
         return attn_vec
